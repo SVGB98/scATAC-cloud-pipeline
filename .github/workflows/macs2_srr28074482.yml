@@ -11,7 +11,7 @@ jobs:
     - name: Download alignment artifact
       uses: actions/download-artifact@v4
       with:
-        name: SRR28074482-fastq
+        name: SRR28074482-alignment-minimap2
         path: .
 
     - name: Install MACS2
