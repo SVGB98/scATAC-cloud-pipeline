@@ -1,4 +1,4 @@
-name: Full scATAC Pipeline (SRR28074482)
+name: Full scATAC Pipeline (SRR28074482, minimap2)
 
 on:
   workflow_dispatch:
@@ -36,25 +36,24 @@ jobs:
         name: SRR28074482-fastq
         path: .
 
-    - name: Install tools
+    - name: Install tools (minimap2, samtools, pigz)
       run: |
         sudo apt-get update
         sudo apt-get install -y samtools pigz
-        wget https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/bwa-mem2-2.2.1_x64-linux.tar.bz2
-        tar -xjf bwa-mem2-2.2.1_x64-linux.tar.bz2
-        sudo mv bwa-mem2-2.2.1_x64-linux/* /usr/local/bin/
+        wget https://github.com/lh3/minimap2/releases/download/v2.28/minimap2-2.28_x64-linux.tar.bz2
+        tar -xjf minimap2-2.28_x64-linux.tar.bz2
+        sudo mv minimap2-2.28_x64-linux/minimap2 /usr/local/bin/
 
-    - name: Download hg38 reference
+    - name: Download hg38 reference (FASTA only)
       run: |
         mkdir ref
         cd ref
         wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
         gunzip hg38.fa.gz
-        bwa-mem2 index hg38.fa
 
-    - name: Align with bwa-mem2
+    - name: Align with minimap2 (paired-end)
       run: |
-        bwa-mem2 mem -t 8 ref/hg38.fa \
+        minimap2 -t 8 -ax sr ref/hg38.fa \
           SRR28074482_1.fastq.gz SRR28074482_2.fastq.gz \
           | samtools view -bS - > aligned.bam
 
@@ -62,11 +61,13 @@ jobs:
       run: |
         samtools sort -o aligned.sorted.bam aligned.bam
         samtools index aligned.sorted.bam
+        rm aligned.bam
 
     - name: Mark duplicates
       run: |
         samtools markdup aligned.sorted.bam aligned.markdup.bam
         samtools index aligned.markdup.bam
+        rm aligned.sorted.bam aligned.sorted.bam.bai
 
     - name: Generate fragments.tsv.gz
       run: |
@@ -77,7 +78,7 @@ jobs:
     - name: Upload alignment artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: SRR28074482-alignment
+        name: SRR28074482-alignment-minimap2
         path: |
           aligned.markdup.bam
           aligned.markdup.bam.bai
