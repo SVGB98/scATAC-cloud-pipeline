@@ -1,0 +1,37 @@
+name: MACS2 peaks (SRR28074482)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  macs2-peaks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download alignment artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: SRR28074482-alignment-minimap2
+        path: .
+
+    - name: Install MACS2
+      run: |
+        python -m pip install --upgrade pip
+        pip install macs2
+
+    - name: Call peaks with MACS2 (narrow peaks)
+      run: |
+        macs2 callpeak \
+          -t aligned.markdup.bam \
+          -f BAM \
+          -g hs \
+          -n SRR28074482 \
+          --outdir macs2_peaks \
+          --keep-dup all \
+          -q 0.01
+
+    - name: Upload MACS2 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: SRR28074482-macs2
+        path: macs2_peaks
