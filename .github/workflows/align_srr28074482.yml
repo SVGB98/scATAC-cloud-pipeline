@@ -12,6 +12,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: SRR28074482-fastq
+        run-id: 33960259907
 
     - name: Install tools
       run: |
