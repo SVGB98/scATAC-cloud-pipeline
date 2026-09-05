@@ -4,18 +4,17 @@ on:
   workflow_dispatch:
 
 jobs:
-    align:
+  align:
     runs-on: ubuntu-latest
 
     steps:
     - name: Download FASTQ artifact from previous run
-    uses: actions/download-artifact@v4
-    with:
-    name: SRR28074482-fastq
-    path: .
-    run-id: 33960259907
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-
+      uses: actions/download-artifact@v4
+      with:
+        name: SRR28074482-fastq
+        path: .
+        run-id: 33960259907
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Install tools
       run: |
