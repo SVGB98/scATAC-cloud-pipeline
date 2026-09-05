@@ -1,0 +1,84 @@
+name: Full scATAC Pipeline (SRR28074482)
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  download-fastq:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download FASTQ files from ENA
+      run: |
+        wget -O SRR28074482_1.fastq.gz \
+          "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR280/082/SRR28074482/SRR28074482_1.fastq.gz"
+
+        wget -O SRR28074482_2.fastq.gz \
+          "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR280/082/SRR28074482/SRR28074482_2.fastq.gz"
+
+    - name: Upload FASTQ artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SRR28074482-fastq
+        path: |
+          SRR28074482_1.fastq.gz
+          SRR28074482_2.fastq.gz
+
+  align:
+    runs-on: ubuntu-latest
+    needs: download-fastq
+
+    steps:
+    - name: Download FASTQ artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: SRR28074482-fastq
+        path: .
+
+    - name: Install tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y samtools pigz
+        wget https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/bwa-mem2-2.2.1_x64-linux.tar.bz2
+        tar -xjf bwa-mem2-2.2.1_x64-linux.tar.bz2
+        sudo mv bwa-mem2-2.2.1_x64-linux/* /usr/local/bin/
+
+    - name: Download hg38 reference
+      run: |
+        mkdir ref
+        cd ref
+        wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+        gunzip hg38.fa.gz
+        bwa-mem2 index hg38.fa
+
+    - name: Align with bwa-mem2
+      run: |
+        bwa-mem2 mem -t 8 ref/hg38.fa \
+          SRR28074482_1.fastq.gz SRR28074482_2.fastq.gz \
+          | samtools view -bS - > aligned.bam
+
+    - name: Sort + index BAM
+      run: |
+        samtools sort -o aligned.sorted.bam aligned.bam
+        samtools index aligned.sorted.bam
+
+    - name: Mark duplicates
+      run: |
+        samtools markdup aligned.sorted.bam aligned.markdup.bam
+        samtools index aligned.markdup.bam
+
+    - name: Generate fragments.tsv.gz
+      run: |
+        samtools view -h aligned.markdup.bam \
+          | awk 'BEGIN{OFS="\t"} !/^@/ {split($0,a,"\t"); chr=a[3]; start=a[4]-1; end=start+length(a[10]); print chr,start,end,a[1]}' \
+          | pigz > fragments.tsv.gz
+
+    - name: Upload alignment artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: SRR28074482-alignment
+        path: |
+          aligned.markdup.bam
+          aligned.markdup.bam.bai
+          fragments.tsv.gz
