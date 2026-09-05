@@ -1,0 +1,32 @@
+name: Download SRR28074482 from ENA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  download-fastq:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check ENA URLs
+      run: |
+        echo "FASTQ 1:"
+        echo "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR280/082/SRR28074482/SRR28074482_1.fastq.gz"
+        echo "FASTQ 2:"
+        echo "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR280/082/SRR28074482/SRR28074482_2.fastq.gz"
+
+    - name: Download FASTQ files from ENA
+      run: |
+        wget -O SRR28074482_1.fastq.gz \
+          "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR280/082/SRR28074482/SRR28074482_1.fastq.gz"
+
+        wget -O SRR28074482_2.fastq.gz \
+          "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR280/082/SRR28074482/SRR28074482_2.fastq.gz"
+
+    - name: Upload FASTQ files as GitHub Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: SRR28074482-fastq
+        path: |
+          SRR28074482_1.fastq.gz
+          SRR28074482_2.fastq.gz
