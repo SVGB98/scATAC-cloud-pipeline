@@ -1,0 +1,26 @@
+name: Upload SRR28074482 FASTQs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload-fastq:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download FASTQ files from ENA
+      run: |
+        wget -O SRR28074482_1.fastq.gz \
+          "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR280/082/SRR28074482/SRR28074482_1.fastq.gz"
+
+        wget -O SRR28074482_2.fastq.gz \
+          "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR280/082/SRR28074482/SRR28074482_2.fastq.gz"
+
+    - name: Upload FASTQ artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SRR28074482-fastq
+        retention-days: 90
+        path: |
+          SRR28074482_1.fastq.gz
+          SRR28074482_2.fastq.gz
